@@ -288,6 +288,19 @@ Ensure you have `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment vari
 connect-standalone config/worker.properties config/connector.properties
 ```
 
+## Run the connector using the automation
+First, enter in the automation repository and starts the containers. Wait the containers and after that you can see the plugin running:
+```bash
+# enters the automation repository
+cd automation
+
+# starts the containers
+docker-compose up -d
+
+# shows the status of connector
+curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
+```
+
 ## Send messages
 
 Using the Kafka console producer, send a message to the `example-stream` topic. Your `example-lambda-connector` will read the message from the topic and invoke the AWS Lambda `example-function`.
@@ -304,6 +317,8 @@ kafka-console-producer --broker-list localhost:19092 --topic example-stream
 Use the AWS Console to read the output of your message sent from the CloudWatch logs for the Lambda.
 
 In Localstack, use the following commands to display the logs:
+
+AWS-CLI 2.0:
 ```bash
 # list the logs groups
 aws logs describe-log-groups --endpoint-url http://localhost:4566
@@ -311,4 +326,16 @@ aws logs describe-log-groups --endpoint-url http://localhost:4566
 
 # list the logs streams
 aws logs tail /aws/lambda/example-function --follow --endpoint-url http://localhost:4566
+```
+
+AWS-CLI 1.0:
+```bash
+# log group name
+LOG_GROUP=`awslocal logs describe-log-groups --endpoint-url http://localhost:4566 --query "logGroups[0].logGroupName" | sed 's/"//g'`
+
+# log stream name
+LOG_STREAM=`awslocal logs describe-log-streams --log-group-name $LOG_GROUP --max-items 1 --order-by LastEventTime --descending --query logStreams[].logStreamName --output text --endpoint-url http://localhost:4566 | head -n 1`
+
+# list the logs streams
+awslocal logs get-log-events --log-group-name $LOG_GROUP --log-stream-name $LOG_STREAM --query events[].message --output text --endpoint-url http://localhost:4566
 ```

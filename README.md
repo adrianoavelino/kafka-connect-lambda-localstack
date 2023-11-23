@@ -267,13 +267,22 @@ curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors
 curl http://localhost:8083/connectors/example-lambda-connector/status
 ```
 
-In Localstack use:
+In Localstack with string converter use:
 ```bash
 # creates the connector
 curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector-localstack.json
 
 # shows the status of connector
 curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
+```
+
+In Localstack with avro converter use:
+```bash
+# creates the connector
+curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector-localstack-avro.json
+
+# shows the status of connector
+curl http://localhost:8083/connectors/example-lambda-connector-localstack-avro/status
 ```
 
 ## Run the connector using the Confluent Platform
@@ -289,29 +298,58 @@ connect-standalone config/worker.properties config/connector.properties
 ```
 
 ## Run the connector using the automation
-First, enter in the automation repository and starts the containers. Wait the containers and after that you can see the plugin running:
+First, enter in the automation folder and starts the containers. Wait the containers and after that you can see the plugin running:
 ```bash
-# enters the automation repository
+# enters the automation folder
 cd automation
 
 # starts the containers
 docker-compose up -d
 
-# shows the status of connector
+# wait the connector to be ready and shows the status of connector
 curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
 ```
 
 ## Send messages
 
 Using the Kafka console producer, send a message to the `example-stream` topic. Your `example-lambda-connector` will read the message from the topic and invoke the AWS Lambda `example-function`.
-
+With the lambda in AWS Console or in Localstack with string converter use:
 ```bash
 # opens the command line
 docker-compose exec broker bash
 
 # connects to the Kafka console producer and sends a message
 kafka-console-producer --broker-list localhost:19092 --topic example-stream
-# {"value": "my example"}
+```
+Exemplos de mensagens:
+```bash
+{"value": "my example"}
+{"value": "my example 2"}
+```
+
+With the lambda in LocalStack using avro converter:
+```bash
+# opens the command line
+docker-compose exec schema-registry bash
+
+# connects to the Kafka console producer and sends a message
+kafka-avro-console-producer \
+  --broker-list localhost:9092 \
+  --topic example-stream-avro \
+  --property key.converter=io.confluent.connect.avro.AvroConverter \
+  --property value.converter=io.confluent.connect.avro.AvroConverter \
+  --property value.converter.schema.registry.url=http://localhost:8081 \
+  --property key.converter.schema.registry.url=http://localhost:8081 \
+  --property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
+  --property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
+  --property parse.key=true \
+  --property key.separator=,
+```
+Exemplos de mensagens avro:
+```bash
+{"timestamp":1637000000000},{"language": "ENGLISH", "greeting": "Hello, World!"}
+
+{"timestamp":1637000000000},{"language": "ITALIAN", "greeting": "Ciao, mondo!"}
 ```
 
 Use the AWS Console to read the output of your message sent from the CloudWatch logs for the Lambda.
@@ -338,4 +376,20 @@ LOG_STREAM=`awslocal logs describe-log-streams --log-group-name $LOG_GROUP --max
 
 # list the logs streams
 awslocal logs get-log-events --log-group-name $LOG_GROUP --log-stream-name $LOG_STREAM --query events[].message --output text --endpoint-url http://localhost:4566
+```
+
+## Delete the connector
+To delete the connector with string converter, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector
+```
+
+To delete the connector with string converter in LocalStack, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector-localstack
+```
+
+Or to delete the connector with avro converter in LocalStack, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector-localstack-avro
 ```

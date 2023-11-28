@@ -6,6 +6,7 @@ on:
 
 env:
   ACTIONS_STEP_DEBUG: true
+  build-number: ${GITHUB_RUN_NUMBER}
 
 jobs:
   build:
@@ -19,11 +20,6 @@ jobs:
         cache: maven
     - run: mvn -B package --file pom.xml
     - run: mkdir staging && cp target/plugin/*.jar staging
-    - uses: actions/upload-artifact@v3
-      with:
-        name: Package
-        path: staging
-        retention-days: 1
     - uses: marvinpinto/action-automatic-releases@latest
       with:
         repo_token: "${{ secrets.ACTEST }}"

@@ -1,15 +1,13 @@
-on: 
-  push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "dev" ]
+# on: 
+#   push:
+#     branches: [ "dev" ]
 
-jobs:
-  release-on-push:
-    runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: rymndhng/release-on-push-action@master
-        with:
-          bump_version_scheme: patch
+# jobs:
+#   release-on-push:
+#     runs-on: ubuntu-latest
+#     env:
+#       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#     steps:
+#       - uses: rymndhng/release-on-push-action@master
+#         with:
+#           bump_version_scheme: patch

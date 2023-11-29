@@ -22,6 +22,7 @@ jobs:
         mvn clean package
         ls target/plugin
         echo "versao=target/plugin/kafka-connect-lambda-localstack-${{ github.event.release.tag_name }}.jar"
+        echo "abc=$github.event_name"
     - name: Upload jar to release
       uses: JasonEtco/upload-to-release@master
       with:

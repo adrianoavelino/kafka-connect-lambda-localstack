@@ -2,7 +2,7 @@ name: upload-files
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ "actions-github" ]
 
 jobs:
        

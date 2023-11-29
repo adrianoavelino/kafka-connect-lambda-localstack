@@ -2,7 +2,7 @@ name: release
 
 on: 
   push:
-    branches: [ "dev" ]
+    branches: [ "actions-github" ]
 
 jobs:
   release-on-push:

@@ -1,4 +1,4 @@
-name: Publish package to GitHub Packages
+name: publish-jar
 on:
   push:
     branches: [ "actions-github" ]
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
-          java-version: '11'
+          java-version: '8.0.392+8'
           distribution: 'temurin'
       - name: Publish package
         run: mvn --batch-mode deploy

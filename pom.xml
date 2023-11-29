@@ -219,4 +219,12 @@
         <url>https://www.nordstrom.com</url>
     </organization>
 
+  <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/adrianoavelino/kafka-connect-lambda-localstack</url>
+    </repository>
+  </distributionManagement>
+
 </project>

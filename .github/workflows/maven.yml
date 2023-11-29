@@ -1,8 +1,10 @@
 name: maven
 
 on:
-  push:
-    branches: [ "actions-github" ]
+  # push:
+  #   branches: [ "actions-github" ]
+  release:
+      types: [ published ]
 
 jobs:
   build:
@@ -19,7 +21,7 @@ jobs:
       run: |
         mvn clean package
         ls target/plugin
-        echo "target/plugin/kafka-connect-lambda-localstack-${{ github.event.release.tag_name }}.jar"
+        echo "versao=target/plugin/kafka-connect-lambda-localstack-${{ github.event.release.tag_name }}.jar"
     - name: Upload jar to release
       uses: JasonEtco/upload-to-release@master
       with:

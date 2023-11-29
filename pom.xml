@@ -5,7 +5,7 @@
 
     <groupId>com.nordstrom.kafka.connect.lambda</groupId>
     <artifactId>kafka-connect-lambda-localstack</artifactId>
-    <version>1.3.0</version>
+    <version>1.3.1</version>
 
     <name>kafka-connect-lambda</name>
     <description>A Kafka Connect Connector for kafka-connect-lambda to allows integration with AWS Lambda functions. When working locally or testing in an environment like Localstack, which emulates AWS services, you can simulate and test the functionality of this connector without interacting directly with AWS resources.</description>

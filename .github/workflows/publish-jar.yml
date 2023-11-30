@@ -1,7 +1,7 @@
 name: publish-jar
 on:
   push:
-    branches: [ "actions-github" ]
+    branches: [ "master" ]
 jobs:
   publish:
     runs-on: ubuntu-latest

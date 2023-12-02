@@ -14,8 +14,8 @@
     "aws.lambda.invocation.timeout.ms": "60000",
     "aws.lambda.invocation.mode": "SYNC",
     "aws.lambda.batch.enabled": "false",
-    "payload.formatter.key.schema.visibility": "all",
-    "payload.formatter.value.schema.visibility": "all",
+    "payload.formatter.key.schema.visibility": "none",
+    "payload.formatter.value.schema.visibility": "none",
     "localstack.enabled": "true"
   }
 }

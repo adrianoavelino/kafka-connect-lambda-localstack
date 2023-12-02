@@ -76,6 +76,7 @@ services:
     - ~/.aws:/root/.aws
     - ../target/plugin:/opt/connectors
     - ../config/log4j.properties:/etc/log4j.properties
+    - ../config/connector-localstack-avro.json:/connector-localstack-avro.json
     - ../config/connector-localstack.json:/connector-localstack.json
     command: 
       - bash 
@@ -93,8 +94,10 @@ services:
           fi
           sleep 5 
         done
-        echo -e "\n--\n+> Creating Lambda Sink Connector"
+        echo -e "\n--\n+> Creating Lambda Sink Connector with String"
         curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @/connector-localstack.json
+        echo -e "\n--\n+> Creating Lambda Sink Connector with avro"
+        curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @/connector-localstack-avro.json
         sleep infinity
     depends_on: [broker]
     network_mode: host

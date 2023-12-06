@@ -70,8 +70,8 @@ services:
 
     - AWS_PROFILE
     - AWS_REGION
-    - AWS_ACCESS_KEY_ID=<YOUR AWS ACCESS KEY ID>
-    - AWS_SECRET_ACCESS_KEY=<YOUR AWS SECRET KEY>
+    - AWS_ACCESS_KEY_ID=local
+    - AWS_SECRET_ACCESS_KEY=local
     volumes:
     - ~/.aws:/root/.aws
     - ./target/plugin:/opt/connectors

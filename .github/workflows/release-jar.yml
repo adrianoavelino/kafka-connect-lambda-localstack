@@ -2,7 +2,7 @@ name: release-jar
 
 on:
   push:
-    branches: [ "github_action" ]
+    branches: [ "master" ]
 
 env:
   ACTIONS_STEP_DEBUG: true

@@ -70,12 +70,35 @@ services:
 
     - AWS_PROFILE
     - AWS_REGION
-    - AWS_ACCESS_KEY_ID=local
-    - AWS_SECRET_ACCESS_KEY=local
+    - AWS_ACCESS_KEY_ID=YOUR_KEY_ID
+    - AWS_SECRET_ACCESS_KEY=YOUR_SECRET
     volumes:
     - ~/.aws:/root/.aws
-    - ./target/plugin:/opt/connectors
-    - ./config/log4j.properties:/etc/log4j.properties
+    - ../target/plugin:/opt/connectors
+    - ../config/log4j.properties:/etc/log4j.properties
+    - ../config/connector-localstack-avro.json:/connector-localstack-avro.json
+    - ../config/connector-localstack.json:/connector-localstack.json
+    command: 
+      - bash 
+      - -c 
+      - |
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run & 
+        #
+        echo "Waiting for Kafka Connect to start listening on localhost ⏳"
+        while : ; do
+          curl_status=$$(curl -s -o /dev/null -w %{http_code} http://localhost:8083/connectors)
+          echo -e $$(date) " Kafka Connect listener HTTP state: " $$curl_status " (waiting for 200)"
+          if [ $$curl_status -eq 200 ] ; then
+            break
+          fi
+          sleep 5 
+        done
+        echo -e "\n--\n+> Creating Lambda Sink Connector with String"
+        curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @/connector-localstack.json
+        echo -e "\n--\n+> Creating Lambda Sink Connector with avro"
+        curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @/connector-localstack-avro.json
+        sleep infinity
     depends_on: [broker]
     network_mode: host
 
@@ -89,7 +112,8 @@ services:
       - DEBUG=${DEBUG-}
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
+      - ../config:/etc/localstack/init/ready.d/config
+      - ./init-scripts/:/etc/localstack/init/ready.d/
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     network_mode: host
-

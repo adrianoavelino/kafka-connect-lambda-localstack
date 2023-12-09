@@ -1,6 +1,11 @@
-# kafka-connect-lambda
+# kafka-connect-lambda-localstack
+[![build-test](https://github.com/adrianoavelino/kafka-connect-lambda-localstack/actions/workflows/build-test.yml/badge.svg)](https://github.com/adrianoavelino/kafka-connect-lambda-localstack/actions/workflows/build-test.yml)
+![GitHub top language](https://img.shields.io/github/languages/top/adrianoavelino/kafka-connect-lambda-localstack)
+[![Repository size](https://img.shields.io/github/repo-size/adrianoavelino/kafka-connect-lambda-localstack)](https://img.shields.io/github/repo-size/adrianoavelino/kafka-connect-lambda-localstack)
+[![Last commit](https://img.shields.io/github/last-commit/adrianoavelino/kafka-connect-lambda-localstack)](https://github.com/adrianoavelino/kafka-connect-lambda-localstack/commits/master)
 
-A Kafka Connect sink plugin to invoke AWS Lambda functions.
+
+A Kafka Connect sink plugin to invoke Lambda functions in AWS or Localstack.
 
 ## Compatibility Matrix
 |kafka-connect-lambda|Kafka Connect API|AWS SDK|
@@ -16,7 +21,7 @@ Due to a compatibility issue with [Apache httpcomponents](http://hc.apache.org/)
 
 Build the connector with Maven using the standard lifecycle goals:
 
-```
+```bash
 mvn clean
 mvn package
 ```
@@ -43,6 +48,7 @@ In addition to the standard [Kafka Connect connector configuration](https://kafk
 | `payload.formatter.class` | No | `com.nordstrom.kafka.connect.formatters.PlainPayloadFormatter` | Specifies the formatter to use. |
 | `payload.formatter.key.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 | `payload.formatter.value.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
+| `localstack.enabled` | No | `false` | Determines whether to use Localstack for development on localhost. |
 
 ## Formatters
 
@@ -92,7 +98,7 @@ The default invocation payload is a JSON representation of a [SinkRecord](https:
 This simple schema record describes our "hello, world" message.
 
 
-```
+```json
 {
   "type": "record",
   "name": "Hello",
@@ -180,38 +186,74 @@ Expected output:
 
 Follow the demo in order to: create an AWS Lambda function, build the connector plugin, run the connector, and send a message.
 
+## Build the connector plugin
+
+```bash
+mvn clean package
+```
+
+Once built, a `kafka-connect-lambda` uber-jar is in the `target/plugin` directory.
+
+## Starts Kafka containers / Localstack
+```bash
+docker-compose up
+```
+
 ## Create an AWS Lambda function
 
 With an active AWS account, can create a simple AWS Lambda function using the [CloudFormation](https://aws.amazon.com/cloudformation) template in the `config/` directory:
 
-```
+Example using AWS:
+```bash
 aws cloudformation create-stack \
   --stack-name example-lambda-stack \
   --capabilities CAPABILITY_NAMED_IAM \
   --template-body file://config/cloudformation.yml
 ```
 
+Example using Localstack:
+> Note: Before running the commands, ensure you set the default profile for LocalStack by using aws configure --profile default.
+```bash
+aws cloudformation create-stack \
+  --stack-name example-lambda-stack \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --template-body file://config/cloudformation.yml \
+  --endpoint-url http://localhost:4566
+```
+
 To make sure our Lambda works, invoke it directly and view the result payload in `result.txt`:
 
+Example using AWS:
+```bash
+aws lambda invoke --function-name example-function \
+--cli-binary-format raw-in-base64-out \
+--payload '{"value": "my example"}' --output text result.txt
 ```
-aws lambda invoke --function-name example-function --payload '{"value": "my example"}' result.txt
+
+Example using Localstack:
+```bash
+aws lambda invoke --function-name example-function \
+--cli-binary-format raw-in-base64-out \
+--payload '{"value": "my example"}' --output text result.txt \
+--endpoint-url http://localhost:4566
 ```
 
 The function simply sends the `payload` back to you in `result.txt` as serialized json.
 
 Use the `describe-stacks` command to fetch the CloudFormation output value for `ExampleFunctionArn`, which we'll need later when setting up our connector configuration:
 
-```
-aws cloudformation describe-stacks --stack-name example-lambda-stack --query "Stacks[0].Outputs[]"
-```
-
-## Build the connector plugin
-
-```
-mvn clean package
+```bash
+aws cloudformation describe-stacks \
+--stack-name example-lambda-stack \
+--query "Stacks[0].Outputs[]"
 ```
 
-Once built, a `kafka-connect-lambda` uber-jar is in the `target/plugin` directory.
+```bash
+aws cloudformation describe-stacks \
+--stack-name example-lambda-stack \
+--query "Stacks[0].Outputs[]" \
+--endpoint-url http://localhost:4566
+```
 
 ## Run the connector using Docker Compose
 
@@ -223,8 +265,37 @@ With the [Kafka Connect REST interface](https://docs.confluent.io/current/connec
 
 Next, supply a connector configuration. You can use `config/connector.json.example` as a starting-point. Fill in values for `<Your AWS Region>` and `<Your function ARN>` and run:
 
+### AWS Lambda
+To create the connector for a lambda in AWS, use the following command:
+```bash
+curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors \
+-d @config/connector.json
 ```
-curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector.json
+
+To show the status of the connector for a lambda in AWS, use the following command:
+```bash
+curl http://localhost:8083/connectors/example-lambda-connector/status
+```
+
+### LocalStack lambda
+In Localstack with string converter, use the command below:
+```bash
+curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors \
+-d @config/connector-localstack.json
+```
+Shows the status of the connector:
+```bash
+curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
+```
+
+To create the connector using Localstack with the Avro converter, follow this step:
+```bash
+curl -XPOST -H 'Content-Type: application/json' http://localhost:8083/connectors -d @config/connector-localstack-avro.json
+```
+
+Shows the status of connector
+```bash
+curl http://localhost:8083/connectors/example-lambda-connector-localstack-avro/status
 ```
 
 ## Run the connector using the Confluent Platform
@@ -235,12 +306,128 @@ Next, configure a Java properties-file containing your connector configuration. 
 
 Ensure you have `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables exported in your shell. Then, run the connector in "standalone-mode":
 
-```
+```bash
 connect-standalone config/worker.properties config/connector.properties
 ```
 
-## Send messages
+## Run the connector using the automation
+First, enter in the automation folder and starts the containers. Wait the containers and after that you can see the plugin running:
+```bash
+# enters the automation folder
+cd automation
+```
+```bash
+# starts the containers
+docker-compose up -d
+```
+```bash
+# wait for some time for the connector to become ready, then check the status of the connector
+curl http://localhost:8083/connectors/example-lambda-connector-localstack/status
+```
 
+## Send messages
 Using the Kafka console producer, send a message to the `example-stream` topic. Your `example-lambda-connector` will read the message from the topic and invoke the AWS Lambda `example-function`.
+With the lambda in AWS Console or in Localstack with string converter use:
+```bash
+# opens the command line
+docker-compose exec broker bash
+```
+```bash
+# connects to the Kafka console producer
+kafka-console-producer --broker-list localhost:19092 --topic example-stream
+```
+To send the messages, paste the messages:
+```json
+{"value": "my example"}
+```
+```json
+{"value": "my example 2"}
+```
+
+With the lambda in LocalStack using avro converter:
+```bash
+# opens the command line
+docker-compose exec schema-registry bash
+```
+```bash
+# connects to the Kafka console producer
+kafka-avro-console-producer \
+  --broker-list localhost:9092 \
+  --topic example-stream-avro \
+  --property key.converter=io.confluent.connect.avro.AvroConverter \
+  --property value.converter=io.confluent.connect.avro.AvroConverter \
+  --property value.converter.schema.registry.url=http://localhost:8081 \
+  --property key.converter.schema.registry.url=http://localhost:8081 \
+  --property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
+  --property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
+  --property parse.key=true \
+  --property key.separator=,
+```
+To send the messages, paste the messages:
+```json
+{"timestamp":1637000000000},{"language": "ENGLISH", "greeting": "Hello, World!"}
+```
+```json
+{"timestamp":1637000000000},{"language": "ITALIAN", "greeting": "Ciao, mondo!"}
+```
 
 Use the AWS Console to read the output of your message sent from the CloudWatch logs for the Lambda.
+
+In Localstack, use the following commands to display the logs:
+
+AWS CLI 2.0 with bash shell:
+```bash
+# creates a variable with log group name
+LOG_GROUP=`aws logs describe-log-groups \
+--endpoint-url http://localhost:4566 \
+--query "logGroups[0].logGroupName" | sed 's/"//g'`
+
+# list the logs streams
+aws logs tail $LOG_GROUP --follow --endpoint-url http://localhost:4566
+```
+
+Or with [fish shell](https://fishshell.com/):
+```bash
+set LOG_GROUP (aws logs describe-log-groups \
+--endpoint-url http://localhost:4566 \
+--query "logGroups[0].logGroupName" | sed 's/"//g'; and true)
+
+aws logs tail $LOG_GROUP --follow --endpoint-url http://localhost:4566
+```
+
+AWS CLI 1.0:
+```bash
+# log group name
+LOG_GROUP=`aws logs describe-log-groups \
+--endpoint-url http://localhost:4566 \
+--query "logGroups[0].logGroupName" | sed 's/"//g'`
+
+# log stream name
+LOG_STREAM=`aws logs describe-log-streams \
+--log-group-name $LOG_GROUP \
+--max-items 1 --order-by LastEventTime \
+--descending --query logStreams[].logStreamName \
+--output text --endpoint-url http://localhost:4566 | head -n 1`
+
+# list the logs streams
+aws logs get-log-events --log-group-name $LOG_GROUP \
+--log-stream-name $LOG_STREAM \
+--query events[].message \
+--output text --endpoint-url http://localhost:4566
+```
+
+## Delete the connector
+To delete the connector with string converter, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector
+```
+
+To delete the connector with string converter in LocalStack, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector-localstack
+```
+
+Or to delete the connector with avro converter in LocalStack, run:
+```bash
+curl -XDELETE http://localhost:8083/connectors/example-lambda-connector-localstack-avro
+```

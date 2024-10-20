@@ -58,8 +58,8 @@ public class InvocationClientConfig extends AbstractConfig {
         this(new InvocationClient.Builder(), parsedConfig);
     }
 
-    InvocationClientConfig(final Map<String, String> parsedConfig, boolean valor) {
-        this(new InvocationClient.Builder(valor), parsedConfig);
+    InvocationClientConfig(final Map<String, String> parsedConfig, boolean valor, String endpointUrlLocalstack) {
+        this(new InvocationClient.Builder(valor, endpointUrlLocalstack), parsedConfig);
     }
 
     InvocationClientConfig(final InvocationClient.Builder builder, final Map<String, String> parsedConfig) {

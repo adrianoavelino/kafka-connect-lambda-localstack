@@ -39,10 +39,15 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
     private final InvocationClientConfig invocationClientConfig;
     private final PayloadFormatterConfig payloadFormatterConfig;
     private final boolean localstackEnabled;
+    private final String endpointUrlLocalstack;
 
     static final String LOCALSTACK_ENABLED_KEY = "localstack.enabled";
     static final String LOCALSTACK_ENABLED_DOC = "Determines whether to use Localstack for development on localhost";
     static final boolean LOCALSTACK_ENABLED_DEFAULT = false;
+
+    static final String ENDPOINT_URL_LOCALSTACK_KEY = "endpoint.url.localstack";
+    static final String ENDPOINT_URL_LOCALSTACK_DOC = "Determines the endpoint URL for Localstack";
+    static final String ENDPOINT_URL_LOCALSTACK_DEFAULT = "http://localhost:4566";
 
     LambdaSinkConnectorConfig(final Map<String, String> parsedConfig) {
         super(configDef(), parsedConfig);
@@ -54,7 +59,8 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
 
         this.retriableErrorCodes = loadRetriableErrorCodes();
         this.localstackEnabled = getBoolean(LOCALSTACK_ENABLED_KEY);
-        this.invocationClientConfig = isLocalstackEnabled() ? new InvocationClientConfig(parsedConfig, this.localstackEnabled): new InvocationClientConfig(parsedConfig);
+        this.endpointUrlLocalstack = getString(ENDPOINT_URL_LOCALSTACK_KEY);
+        this.invocationClientConfig = isLocalstackEnabled() ? new InvocationClientConfig(parsedConfig, this.localstackEnabled, this.endpointUrlLocalstack): new InvocationClientConfig(parsedConfig);
         this.payloadFormatterConfig = new PayloadFormatterConfig(parsedConfig);
     }
 
@@ -98,6 +104,10 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
         return localstackEnabled;
     }
 
+    public String getEndpointUrlLocalstack() {
+        return endpointUrlLocalstack;
+    }
+
     Collection<Integer> loadRetriableErrorCodes() {
        final List<String> retriableErrorCodesString = this.getList(RETRIABLE_ERROR_CODES_KEY);
        try {
@@ -138,6 +148,12 @@ public class LambdaSinkConnectorConfig extends AbstractConfig {
                 RETRIABLE_ERROR_CODES_DEFAULT,
                 Importance.LOW,
                 RETRIABLE_ERROR_CODES_DOC)
+
+            .define(ENDPOINT_URL_LOCALSTACK_KEY,
+                ConfigDef.Type.STRING,
+                    ENDPOINT_URL_LOCALSTACK_DEFAULT,
+                ConfigDef.Importance.LOW,
+                    ENDPOINT_URL_LOCALSTACK_DOC)
 
             .define(LOCALSTACK_ENABLED_KEY,
                     ConfigDef.Type.BOOLEAN,

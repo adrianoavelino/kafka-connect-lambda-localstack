@@ -6,8 +6,8 @@
     "topics": "example-stream-avro",
     "key.converter": "io.confluent.connect.avro.AvroConverter",
     "value.converter": "io.confluent.connect.avro.AvroConverter",
-    "value.converter.schema.registry.url": "http://localhost:8081",
-    "key.converter.schema.registry.url": "http://localhost:8081",
+    "value.converter.schema.registry.url": "http://schema-registry:8081",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
     "payload.formatter.class": "com.nordstrom.kafka.connect.formatters.JsonPayloadFormatter",
     "aws.region": "us-east-1",
     "aws.lambda.function.arn": "arn:aws:lambda:us-east-1:000000000000:function:example-function",
@@ -16,6 +16,7 @@
     "aws.lambda.batch.enabled": "false",
     "payload.formatter.key.schema.visibility": "none",
     "payload.formatter.value.schema.visibility": "none",
-    "localstack.enabled": "true"
+    "localstack.enabled": "true",
+    "endpoint.url.localstack": "http://localstack:4566"
   }
 }

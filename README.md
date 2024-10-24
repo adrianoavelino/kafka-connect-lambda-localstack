@@ -49,6 +49,7 @@ In addition to the standard [Kafka Connect connector configuration](https://kafk
 | `payload.formatter.key.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 | `payload.formatter.value.schema.visibility` | No | `min` | Determines whether schema (if present) is included. Only applies to JsonPayloadFormatter |
 | `localstack.enabled` | No | `false` | Determines whether to use Localstack for development on localhost. |
+| `endpoint.url.localstack` | No | `http://localhost:4566` | Determines the endpoint URL for Localstack. |
 
 ## Formatters
 
@@ -334,7 +335,7 @@ docker-compose exec broker bash
 ```
 ```bash
 # connects to the Kafka console producer
-kafka-console-producer --broker-list localhost:19092 --topic example-stream
+kafka-console-producer --broker-list localhost:29092 --topic example-stream
 ```
 To send the messages, paste the messages:
 ```json
@@ -345,6 +346,7 @@ To send the messages, paste the messages:
 ```
 
 With the lambda in LocalStack using avro converter:
+Option 1: Continuos messages sending
 ```bash
 # opens the command line
 docker-compose exec schema-registry bash
@@ -352,23 +354,55 @@ docker-compose exec schema-registry bash
 ```bash
 # connects to the Kafka console producer
 kafka-avro-console-producer \
-  --broker-list localhost:9092 \
-  --topic example-stream-avro \
-  --property key.converter=io.confluent.connect.avro.AvroConverter \
-  --property value.converter=io.confluent.connect.avro.AvroConverter \
-  --property value.converter.schema.registry.url=http://localhost:8081 \
-  --property key.converter.schema.registry.url=http://localhost:8081 \
-  --property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
-  --property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
-  --property parse.key=true \
-  --property key.separator=,
+--broker-list broker:29092 \
+--topic example-stream-avro \
+--property key.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter.schema.registry.url=http://schema-registry:8081 \
+--property key.converter.schema.registry.url=http://schema-registry:8081 \
+--property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
+--property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
+--property parse.key=true \
+--property key.separator=,
 ```
+
 To send the messages, paste the messages:
 ```json
 {"timestamp":1637000000000},{"language": "ENGLISH", "greeting": "Hello, World!"}
 ```
 ```json
 {"timestamp":1637000000000},{"language": "ITALIAN", "greeting": "Ciao, mondo!"}
+```
+
+Option 2: Quick single message sending:
+```bash
+echo "{\"timestamp\":1637000000000},{\"language\": \"ITALIAN\", \"greeting\": \"Ciao, mondo!\"}" | docker compose exec -T schema-registry \
+kafka-avro-console-producer \
+--broker-list broker:29092 \
+--topic example-stream-avro \
+--property key.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter.schema.registry.url=http://schema-registry:8081 \
+--property key.converter.schema.registry.url=http://schema-registry:8081 \
+--property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
+--property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
+--property parse.key=true \
+--property key.separator=,
+```
+
+```bash
+echo "{\"timestamp\":1637000000000},{\"language\": \"ENGLISH\", \"greeting\": \"Hello, World!\"}" | docker compose exec -T schema-registry \
+kafka-avro-console-producer \
+--broker-list broker:29092 \
+--topic example-stream-avro \
+--property key.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter=io.confluent.connect.avro.AvroConverter \
+--property value.converter.schema.registry.url=http://schema-registry:8081 \
+--property key.converter.schema.registry.url=http://schema-registry:8081 \
+--property value.schema='{"type":"record","name":"Hello","doc":"An example Avro-encoded `Hello` message.","namespace":"com.nordstrom.kafka.example","fields":[{"name":"language","type":{"type":"enum","name":"language","symbols":["ENGLISH","FRENCH","ITALIAN","SPANISH"]}},{"name":"greeting","type":"string"}]}' \
+--property key.schema='{"type":"record","name":"Header","fields":[{"name":"timestamp","type":"long"}]}' \
+--property parse.key=true \
+--property key.separator=,
 ```
 
 Use the AWS Console to read the output of your message sent from the CloudWatch logs for the Lambda.

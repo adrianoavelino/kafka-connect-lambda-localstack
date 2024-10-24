@@ -11,6 +11,7 @@
     "aws.lambda.invocation.timeout.ms": "60000",
     "aws.lambda.invocation.mode": "SYNC",
     "aws.lambda.batch.enabled": "false",
-    "localstack.enabled": "true"
+    "localstack.enabled": "true",
+    "endpoint.url.localstack": "http://localstack:4566"
   }
 }

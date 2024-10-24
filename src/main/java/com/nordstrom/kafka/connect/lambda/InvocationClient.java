@@ -134,11 +134,11 @@ public class InvocationClient {
             this.innerBuilder = AWSLambdaAsyncClientBuilder.standard();
         }
 
-        public Builder(boolean isLocalstackEnabled) {
+        public Builder(boolean isLocalstackEnabled, String endpointUrlLocalstack) {
             this.innerBuilder = AWSLambdaAsyncClientBuilder.standard();
             if(isLocalstackEnabled) {
                 LOGGER.info("Localstack is enabled", isLocalstackEnabled);
-                AwsClientBuilder.EndpointConfiguration endpoint = new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", "us-east-1");
+                AwsClientBuilder.EndpointConfiguration endpoint = new AwsClientBuilder.EndpointConfiguration(endpointUrlLocalstack, "us-east-1");
                 this.innerBuilder.setEndpointConfiguration(endpoint);
             }
         }

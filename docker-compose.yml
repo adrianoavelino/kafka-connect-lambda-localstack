@@ -1,37 +1,28 @@
-version: "3"
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:5.3.1
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     ports:
-    - 2181:2181
-    logging: { driver: none }
-    network_mode: host
-
+      - 2181:2181
   broker:
     image: confluentinc/cp-kafka:5.3.1
     ports:
-    - 9092:9092
+      - "29092:29092"
+      - "9092:9092"
+      - "9101:9101"
     environment:
-    - KAFKA_ZOOKEEPER_CONNECT=localhost:2181
-    - KAFKA_LISTENERS=PUBLIC://0.0.0.0:9092,INTERNAL://0.0.0.0:19092
-    - KAFKA_ADVERTISED_LISTENERS=PUBLIC://localhost:9092,INTERNAL://localhost:19092
-    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PUBLIC:PLAINTEXT,INTERNAL:PLAINTEXT
-    - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-    - KAFKA_NUM_PARTITIONS=2
-    - KAFKA_DEFAULT_REPLICATION_FACTOR=1
-    - KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS=10
-    - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
-    - KAFKA_DELETE_TOPIC_ENABLE=true
-    - KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE=false
-
-    - KAFKA_LOG4J_ROOT_LOGLEVEL=INFO
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
     depends_on: [zookeeper]
-    logging: { driver: none }
-    network_mode: host
-
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
     hostname: schema-registry
@@ -41,9 +32,8 @@ services:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'localhost:19092'
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-    network_mode: host
 
   # NB: run connect locally in stand-alone mode to debug
   connect:
@@ -51,33 +41,30 @@ services:
     ports:
     - 8083:8083
     environment:
-    - CONNECT_BOOTSTRAP_SERVERS=localhost:19092
-    - CONNECT_REST_ADVERTISED_HOST_NAME=connect
-    - CONNECT_GROUP_ID=connect
-    - CONNECT_CONFIG_STORAGE_TOPIC=_connect_configs
-    - CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1
-    - CONNECT_OFFSET_STORAGE_TOPIC=_connect_offsets
-    - CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1
-    - CONNECT_STATUS_STORAGE_TOPIC=_connect_status
-    - CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
-    - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-    - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-    - CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-    - CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
-
-    - CONNECT_PLUGIN_PATH=/opt/connectors
-    - KAFKA_LOG4J_OPTS=-Dlog4j.configuration=file:/etc/log4j.properties
-
-    - AWS_PROFILE
-    - AWS_REGION
-    - AWS_ACCESS_KEY_ID=local
-    - AWS_SECRET_ACCESS_KEY=local
+      CONNECT_BOOTSTRAP_SERVERS: broker:29092
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_GROUP_ID: connect
+      CONNECT_CONFIG_STORAGE_TOPIC: _connect_configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_TOPIC: _connect_offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: _connect_status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_PLUGIN_PATH: /opt/connectors
+      KAFKA_LOG4J_OPTS: -Dlog4j.configuration=file:/etc/log4j.properties
+      AWS_PROFILE:
+      AWS_REGION:
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
     volumes:
     - ~/.aws:/root/.aws
     - ./target/plugin:/opt/connectors
     - ./config/log4j.properties:/etc/log4j.properties
     depends_on: [broker]
-    network_mode: host
 
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack-main}"
@@ -91,5 +78,3 @@ services:
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
-    network_mode: host
-

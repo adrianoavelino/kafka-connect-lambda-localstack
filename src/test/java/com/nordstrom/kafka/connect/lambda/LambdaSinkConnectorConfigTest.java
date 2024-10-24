@@ -1,7 +1,5 @@
 package com.nordstrom.kafka.connect.lambda;
 
-import org.apache.kafka.common.config.ConfigException;
-
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -27,6 +25,7 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals(500L, config.getRetryBackoffTimeMillis());
         assertEquals(5, config.getRetries());
         assertFalse(config.isLocalstackEnabled());
+        assertEquals("http://localhost:4566",config.getEndpointUrlLocalstack());
     }
 
     @Test
@@ -45,6 +44,7 @@ public class LambdaSinkConnectorConfigTest {
                 put("retry.backoff.millis", "123");
                 put("retries.max", "456");
                 put("localstack.enabled", "true");
+                put("endpoint.url.localstack", "http://server:999");
             }
         });
 
@@ -56,5 +56,6 @@ public class LambdaSinkConnectorConfigTest {
         assertEquals(123, config.getRetryBackoffTimeMillis());
         assertEquals(456, config.getRetries());
         assertTrue(config.isLocalstackEnabled());
+        assertEquals("http://server:999", config.getEndpointUrlLocalstack());
     }
 }
